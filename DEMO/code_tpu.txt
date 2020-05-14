@@ -1,0 +1,36 @@
+export PROJECT_NAME=ai-code-and-research
+gcloud config set project ${PROJECT_NAME}
+gsutil mb -p ${PROJECT_NAME} -c standard -l us-central1 -b on gs://geek-tpu
+ctpu up --tpu-size=v2-8 \
+ --preemptible \
+ --machine-type=n1-standard-8 \
+ --zone=us-central1-b \
+ --tf-version=1.15 \
+ --name=geek-tutorial1
+
+export TPU_NAME=geek-tutorial1
+git clone https://github.com/google-research/bert
+git clone https://gist.github.com/60c2bdb54d156a41194446737ce03e2e.git download_glue_data
+python3 download_glue_data/download_glue_data.py --data_dir $HOME/glue_data --tasks all
+export PYTHONPATH="${PYTHONPATH}:/usr/share/tpu/models"
+export BERT_BASE_DIR=gs://cloud-tpu-checkpoints/bert/uncased_L-12_H-768_A-12
+export GLUE_DIR=$HOME/glue_data
+export TASK_NAME=MRPC
+export STORAGE_BUCKET=gs://geek-tpu
+python3 ./bert/run_classifier.py \
+    --task_name=${TASK_NAME} \
+    --do_train=true \
+    --do_eval=true \
+    --data_dir=${GLUE_DIR}/${TASK_NAME} \
+    --vocab_file=${BERT_BASE_DIR}/vocab.txt \
+    --bert_config_file=${BERT_BASE_DIR}/bert_config.json \
+    --init_checkpoint=${BERT_BASE_DIR}/bert_model.ckpt \
+    --max_seq_length=128 \
+    --train_batch_size=32 \
+    --learning_rate=2e-5 \
+    --num_train_epochs=3.0 \
+    --output_dir=${STORAGE_BUCKET}/${TASK_NAME}-output/ \
+    --use_tpu=True \
+    --tpu_name=${TPU_NAME}
+exit
+ctpu delete --zone=us-central1-b
