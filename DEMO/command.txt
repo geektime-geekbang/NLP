@@ -1,0 +1,25 @@
+import stanza
+stanza.download('en')
+pipeline = stanza.Pipeline('en', processors='tokenize,mwt,pos,lemma,depparse')
+
+text = "I love China."
+doc = pipeline(text)
+
+# Tokenize
+for i, sentence in enumerate(doc.sentences):
+    print(f'====== Sentence {i+1} tokens =======')
+    print(*[f'id: {token.id}\ttext: {token.text}' for token in sentence.tokens], sep='\n')
+
+# MWT
+for token in doc.sentences[0].tokens:
+    print(f'token: {token.text}\twords: {", ".join([word.text for word in token.words])}')
+
+# POS
+print(*[f'word: {word.text}\tupos: {word.upos}\txpos: {word.xpos}\tfeats: {word.feats if word.feats else "_"}' for sent in doc.sentences for word in sent.words], sep='\n')
+
+# LEMMA
+print(*[f'word: {word.text+" "}\tlemma: {word.lemma}' for sent in doc.sentences for word in sent.words], sep='\n')
+
+# Dependency Parsing
+
+print(*[f'id: {word.id}\tword: {word.text}\thead id: {word.head}\thead: {sent.words[word.head-1].text if word.head > 0 else "root"}\tdeprel: {word.deprel}' for sent in doc.sentences for word in sent.words], sep='\n')
